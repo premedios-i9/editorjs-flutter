@@ -6,13 +6,14 @@ import 'package:editorjs_flutter/src/model/EditorJSViewStyles.dart';
 import 'package:editorjs_flutter/src/model/EditorJSCSSTag.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_html/style.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class EditorJSView extends StatefulWidget {
   final String? editorJSData;
   final String? styles;
 
-  const EditorJSView({Key? key, this.editorJSData, this.styles})
-      : super(key: key);
+  const EditorJSView({Key? key, this.editorJSData, this.styles}) : super(key: key);
 
   @override
   EditorJSViewState createState() => EditorJSViewState();
@@ -63,23 +64,22 @@ class EditorJSViewState extends State<EditorJSView> {
 
             switch (element.type) {
               case "header":
-                items.add(Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        element.data!.text!,
-                        style: TextStyle(
-                            fontSize: levelFontSize,
-                            fontWeight: (element.data!.level! <= 3)
-                                ? FontWeight.bold
-                                : FontWeight.normal),
-                      )
-                    ]));
+                items.add(Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(
+                    element.data!.text!,
+                    style: TextStyle(fontSize: levelFontSize, fontWeight: (element.data!.level! <= 3) ? FontWeight.bold : FontWeight.normal),
+                  )
+                ]));
                 break;
               case "paragraph":
                 items.add(Html(
                   data: element.data!.text,
                   style: customStyleMap,
+                  onLinkTap: (url, context, attributes, element) async {
+                    if (url != null && await canLaunchUrlString(url)) {
+                      await launchUrlString(url);
+                    }
+                  },
                 ));
                 break;
               case "list":
@@ -97,6 +97,11 @@ class EditorJSViewState extends State<EditorJSView> {
                               child: Html(
                             data: bullet + element,
                             style: customStyleMap,
+                            onLinkTap: (url, context, attributes, element) async {
+                              if (url != null && await canLaunchUrlString(url)) {
+                                await launchUrlString(url);
+                              }
+                            },
                           ))
                         ]),
                       );
@@ -107,8 +112,14 @@ class EditorJSViewState extends State<EditorJSView> {
                           children: <Widget>[
                             Container(
                               child: Html(
-                                  data: bullet + element,
-                                  style: customStyleMap),
+                                data: bullet + element,
+                                style: customStyleMap,
+                                onLinkTap: (url, context, attributes, element) async {
+                                  if (url != null && await canLaunchUrlString(url)) {
+                                    await launchUrlString(url);
+                                  }
+                                },
+                              ),
                             )
                           ],
                         ),
@@ -118,12 +129,10 @@ class EditorJSViewState extends State<EditorJSView> {
                 );
                 break;
               case "delimiter":
-                items.add(Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Text('***', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center,)
-                      Expanded(child: Divider(color: Colors.grey))
-                    ]));
+                items.add(Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                  // Text('***', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center,)
+                  Expanded(child: Divider(color: Colors.grey))
+                ]));
                 break;
               case "image":
                 items.add(Image.network(element.data!.file!.url!));
@@ -144,14 +153,9 @@ class EditorJSViewState extends State<EditorJSView> {
         map.putIfAbsent(
             element.tag.toString(),
             () => Style(
-                backgroundColor: (element.backgroundColor != null)
-                    ? getColor(element.backgroundColor!)
-                    : null,
-                color:
-                    (element.color != null) ? getColor(element.color!) : null,
-                padding: (element.padding != null)
-                    ? EdgeInsets.all(element.padding!)
-                    : null));
+                backgroundColor: (element.backgroundColor != null) ? getColor(element.backgroundColor!) : null,
+                color: (element.color != null) ? getColor(element.color!) : null,
+                padding: (element.padding != null) ? EdgeInsets.all(element.padding!) : null));
       },
     );
 
